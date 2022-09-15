@@ -107,7 +107,9 @@ if __name__ == "__main__":
                 isContains = hwpExtractor(fname).flag
                 
             if isContains:
-                #hash
+                with open(fname,"rb") as f:
+                    hashlib.sha224(f.read()).hexdigest()
+                    
                 #save to MySQL
                 continue
             else:
