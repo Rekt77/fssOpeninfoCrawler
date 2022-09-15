@@ -1,6 +1,6 @@
 import requests
 import shutil
-import pymysql
+import mysql_connector
 import time
 import hashlib
 import os
@@ -35,7 +35,7 @@ class Headers:
         self.__params[k] = v
 
 
-def download_file(url,fname="",path="./"):
+def download_file(url,fname="",path="./files"):
     if fname == "":
         fname = url.split('/')[-1]
     with requests.get(url, stream=True) as r:
@@ -71,11 +71,11 @@ class hwpExtractor:
     def extract(self,fname):
         fname = olefile.OleFileIO(fname)
         #PrvText 스트림 내의 내용을 읽기
-        encoded_text = f.openstream("PrvText").read() 
+        encoded_text = fname.openstream("PrvText").read() 
         #인코딩된 텍스트를 UTF-16으로 디코딩
         decoded_text = encoded_text.decode("UTF-16")
         for law in self.law:
-                if text.find(law) >=0:
+                if decoded_text.find(law) >=0:
                     return True
         return False
 
@@ -84,6 +84,12 @@ if __name__ == "__main__":
     base_url = "https://www.fss.or.kr"
     entry_url = "/fss/job/openInfo/list.do?"
     fssHeaders = Headers(base_url+entry_url,sdate="2018-01-01")
+    try:
+        dbconn = mysql_connector.Connector()
+    except:
+        print("mysql server is not running")
+        exit()
+
     while True:
         res=requests.get(fssHeaders.url,params=fssHeaders.params).text
         
@@ -95,12 +101,29 @@ if __name__ == "__main__":
             soup=BeautifulSoup(requests.get(new_url).text,'html.parser')
             pdfurl = soup.find("div",class_="file-list__set__item").a["href"]
             fname = soup.find("span",class_="name").text
+            
+            #폴더가 없을 시
+            if not os.path.exists("./files"):
+                os.mkdir("files")
 
-            isContains = pdfExtractor(download_file("/".join((base_url,pdfurl)),fname)).flag
-            if isContains:
-                #hash
-                #save to MySQL
-                continue
+            fname = download_file("/".join((base_url,pdfurl)),fname)
+            if fname.split(".")[-1] == "pdf":
+                isContains = pdfExtractor(fname).flag
             else:
-                os.remove(fname)
+                isContains = hwpExtractor(fname).flag
+                
+            if isContains:
+                with open("./files/"+fname,"rb") as f:
+                    sha224 = hashlib.sha224(f.read()).hexdigest()
+                #save to MySQL
+                if dbconn.findHash(sha224):
+                    os.remove("./files/"+fname)
+
+                else :
+                    dbconn.insertValues({'date': '', 'company': '', 'reldept': '', 'filename': fname, 'sha1':sha224 })
+                #{'date': datetime.datetime(2022, 7, 28, 0, 0)}
+                #id, date, company, reldept, filename, hash
+
+            else:
+                os.remove("./files/"+fname)
         fssHeaders.params["pageIndex"] +=1
