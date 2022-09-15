@@ -18,12 +18,12 @@ class Connector:
             params["company"],
             params["reldept"],
             params["filename"],
-            params["hash"])
+            params["sha1"])
         self.cursor.execute(query)
         self.fss_db.commit()
     
     def findHash(self,hash):
-        sql = "SELECT hash from PDFS"
+        sql = "SELECT sha1 FROM PDFS WHERE sha1=%s"%(hash)
         self.cursor.execute(sql)
         result = self.cursor.fetchall()
         return result
