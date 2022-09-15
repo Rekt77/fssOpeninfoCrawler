@@ -71,11 +71,11 @@ class hwpExtractor:
     def extract(self,fname):
         fname = olefile.OleFileIO(fname)
         #PrvText 스트림 내의 내용을 읽기
-        encoded_text = f.openstream("PrvText").read() 
+        encoded_text = fname.openstream("PrvText").read() 
         #인코딩된 텍스트를 UTF-16으로 디코딩
         decoded_text = encoded_text.decode("UTF-16")
         for law in self.law:
-                if text.find(law) >=0:
+                if decoded_text.find(law) >=0:
                     return True
         return False
 
@@ -95,8 +95,12 @@ if __name__ == "__main__":
             soup=BeautifulSoup(requests.get(new_url).text,'html.parser')
             pdfurl = soup.find("div",class_="file-list__set__item").a["href"]
             fname = soup.find("span",class_="name").text
-
-            isContains = pdfExtractor(download_file("/".join((base_url,pdfurl)),fname)).flag
+            fname = download_file("/".join((base_url,pdfurl)),fname)
+            if fname.split(".")[-1] == "pdf":
+                isContains = pdfExtractor(fname).flag
+            else:
+                isContains = hwpExtractor(fname).flag
+                
             if isContains:
                 #hash
                 #save to MySQL
