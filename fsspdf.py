@@ -1,6 +1,6 @@
 import requests
 import shutil
-import pymysql
+import mysql_connector
 import time
 import hashlib
 import os
@@ -35,7 +35,7 @@ class Headers:
         self.__params[k] = v
 
 
-def download_file(url,fname="",path="./"):
+def download_file(url,fname="",path="./files"):
     if fname == "":
         fname = url.split('/')[-1]
     with requests.get(url, stream=True) as r:
@@ -84,6 +84,12 @@ if __name__ == "__main__":
     base_url = "https://www.fss.or.kr"
     entry_url = "/fss/job/openInfo/list.do?"
     fssHeaders = Headers(base_url+entry_url,sdate="2018-01-01")
+    try:
+        dbconn = mysql_connector.Connector()
+    except:
+        print("mysql server is not running")
+        exit()
+
     while True:
         res=requests.get(fssHeaders.url,params=fssHeaders.params).text
         
@@ -100,18 +106,24 @@ if __name__ == "__main__":
             if not os.path.exists("./files"):
                 os.mkdir("files")
 
-            fname = download_file("./files".join((base_url,pdfurl)),fname)
+            fname = download_file("/".join((base_url,pdfurl)),fname)
             if fname.split(".")[-1] == "pdf":
                 isContains = pdfExtractor(fname).flag
             else:
                 isContains = hwpExtractor(fname).flag
                 
             if isContains:
-                with open(fname,"rb") as f:
-                    hashlib.sha224(f.read()).hexdigest()
-                    
+                with open("./files/"+fname,"rb") as f:
+                    sha224 = hashlib.sha224(f.read()).hexdigest()
                 #save to MySQL
-                continue
+                if dbconn.findHash(sha224):
+                    os.remove("./files/"+fname)
+
+                else :
+                    dbconn.insertValues({'date': '', 'company': '', 'reldept': '', 'filename': fname, 'sha1':sha224 })
+                #{'date': datetime.datetime(2022, 7, 28, 0, 0)}
+                #id, date, company, reldept, filename, hash
+
             else:
-                os.remove(fname)
+                os.remove("./files/"+fname)
         fssHeaders.params["pageIndex"] +=1
