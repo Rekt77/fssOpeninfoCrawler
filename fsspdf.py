@@ -101,6 +101,10 @@ if __name__ == "__main__":
             soup=BeautifulSoup(requests.get(new_url).text,'html.parser')
             pdfurl = soup.find("div",class_="file-list__set__item").a["href"]
             fname = soup.find("span",class_="name").text
+            info = soup.find("div",class_= "bd-view")
+            reldept = info.dl()[0].dd().text
+            date = info.dl()[1].dd().text
+            company = info.dl()[2].dd().text
             
             #폴더가 없을 시
             if not os.path.exists("./files"):

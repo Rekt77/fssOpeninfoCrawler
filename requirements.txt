@@ -1,0 +1,5 @@
+beautifulsoup4==4.11.1
+cryptography==3.4.8
+olefile==0.46
+PyPDF2==2.10.8
+pymysql==1.0.2
