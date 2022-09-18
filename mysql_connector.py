@@ -13,17 +13,19 @@ class Connector:
 
     def insertValues(self,params):
         #id, date, company, reldept, filename, hash
-        query = "INSERT INTO PDFS VALUES (?,'%s','%s','%s','%s','%s');"%(
+        query = "INSERT INTO PDFS (date,company,reldept,filename,sha1) VALUE ('%s','%s','%s','%s','%s')"%(
             params["date"],
             params["company"],
             params["reldept"],
             params["filename"],
             params["sha1"])
+
         self.cursor.execute(query)
         self.fss_db.commit()
     
     def findHash(self,hash):
-        sql = "SELECT sha1 FROM PDFS WHERE sha1=%s"%(hash)
-        self.cursor.execute(sql)
+        query = "SELECT sha1 FROM PDFS WHERE sha1='%s'"%(hash)
+        print(query)
+        self.cursor.execute(query)
         result = self.cursor.fetchall()
         return result
