@@ -101,10 +101,11 @@ if __name__ == "__main__":
             soup=BeautifulSoup(requests.get(new_url).text,'html.parser')
             pdfurl = soup.find("div",class_="file-list__set__item").a["href"]
             fname = soup.find("span",class_="name").text
-            info = soup.find("div",class_= "bd-view")
-            reldept = info.dl()[0].dd().text
-            date = info.dl()[1].dd().text
-            company = info.dl()[2].dd().text
+            info = soup.find("div",class_= "bd-view").find_all("dl")
+            
+            company = info[0].dd.text
+            date = info[1].dd.text
+            reldept = info[2].dd.text
             
             #폴더가 없을 시
             if not os.path.exists("./files"):
@@ -112,9 +113,9 @@ if __name__ == "__main__":
 
             fname = download_file("/".join((base_url,pdfurl)),fname)
             if fname.split(".")[-1] == "pdf":
-                isContains = pdfExtractor(fname).flag
+                isContains = pdfExtractor("./files/"+fname).flag
             else:
-                isContains = hwpExtractor(fname).flag
+                isContains = hwpExtractor("./files/"+fname).flag
                 
             if isContains:
                 with open("./files/"+fname,"rb") as f:
@@ -124,7 +125,7 @@ if __name__ == "__main__":
                     os.remove("./files/"+fname)
 
                 else :
-                    dbconn.insertValues({'date': '', 'company': '', 'reldept': '', 'filename': fname, 'sha1':sha224 })
+                    dbconn.insertValues({'date': date, 'company': company, 'reldept': reldept, 'filename': fname, 'sha1':sha224 })
                 #{'date': datetime.datetime(2022, 7, 28, 0, 0)}
                 #id, date, company, reldept, filename, hash
 
